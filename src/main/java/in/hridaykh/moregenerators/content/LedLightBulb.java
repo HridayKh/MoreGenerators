@@ -2,14 +2,11 @@ package in.hridaykh.moregenerators.content;
 
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import in.hridaykh.moregenerators.collections.ModPartialModels;
-import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.patryk3211.powergrid.electricity.light.bulb.ILightBulb;
 import org.patryk3211.powergrid.electricity.light.bulb.LightBulb;
 import org.patryk3211.powergrid.electricity.light.bulb.LightBulbState;
@@ -48,25 +45,15 @@ public class LedLightBulb extends LightBulb {
 		applyRatedValues(RATED_POWER_WATTS, RATED_VOLTAGE_VOLTS, TEMPERATURE_AT_RATED_RESISTANCE, THERMAL_MASS);
 	}
 
-	private static Component propertiesHeader(boolean holdingShift) {
-		final String[] headerParts = Component.translatable("powergrid.tooltip.holdForDescription", "$").getString().split("\\$");
-		final MutableComponent keyComponent = Component.translatable("create.tooltip.keyShift").copy().withStyle(holdingShift ? ChatFormatting.WHITE : ChatFormatting.GRAY);
-		return Component.empty().append(Component.literal(headerParts[0]).withStyle(ChatFormatting.DARK_GRAY)).append(keyComponent).append(Component.literal(headerParts[1]).withStyle(ChatFormatting.DARK_GRAY));
-	}
-
 	@Override
 	public LightBulbState createState(LightFixtureBlockEntity fixture) {
 		return new State(this, fixture, modelSupplier, dyedModelSupplier);
 	}
 
-	// Updated context signature for 1.21.1
 	@Override
 	public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag isAdvanced) {
-		final boolean holdingShift = Screen.hasShiftDown();
-		if (holdingShift) {
-			appendProperties(stack, Minecraft.getInstance().player, tooltipComponents);
-		} else {
-			tooltipComponents.add(propertiesHeader(false));
+		if (FMLEnvironment.dist.isClient()) {
+			LedLightBulbClientTooltip.appendTooltip(this, stack, tooltipComponents);
 		}
 	}
 
