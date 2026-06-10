@@ -28,17 +28,20 @@ public class mRecipeProvider extends net.minecraft.data.recipes.RecipeProvider i
 		// ingredients
 		shapelessRecipe(ro, ModItems.LED_FILAMENT, 2, ModItems.PHOSPHORUS, ModItems.SILICON);
 		complexShapedRecipe(ro, ModItems.LED_BULB, 1, Map.of('G', Items.GLASS_PANE, 'F', ModItems.LED_FILAMENT, 'C', AllItems.COPPER_SHEET), " G ", "GFG", " C ");
-
 		oreSmelting(ro, List.of(Items.QUARTZ), RecipeCategory.MISC, ModItems.SILICON, 0f, 100, "silicon");
 		oreBlasting(ro, List.of(Items.QUARTZ), RecipeCategory.MISC, ModItems.SILICON, 0f, 100, "silicon");
 
 		// misc
 		shapedRecipe(ro, AllItems.COPPER_NUGGET, "##", ModdedItems.WIRE, 2);
-
-		// blocks
 		shapelessRecipe(ro, ModBlocks.LIGHT_RESISTOR, 1, ModdedItems.RESISTOR, Items.TORCH);
+
+		// batteries
 		shapelessRecipe(ro, ModBlocks.BUFF_POTATO_BATTERY, 1, AllItems.COPPER_SHEET, ModdedItems.ZINC_SHEET, Items.BAKED_POTATO);
+
+		// solar
 		shapelessRecipe(ro, ModBlocks.SOLAR_PANEL, 1, ModItems.SILICON, ModItems.PHOSPHORUS, Items.GLASS_PANE, AllItems.COPPER_NUGGET);
+		shapelessRecipe(ro, ModBlocks.SOLAR_PANEL, 1, ModBlocks.ANGLED_SOLAR_PANEL);
+		shapelessRecipe(ro, ModBlocks.ANGLED_SOLAR_PANEL, 1, ModBlocks.SOLAR_PANEL);
 	}
 
 	private void shapelessRecipe(RecipeOutput ro, ItemLike out, int q, ItemLike... ins) {

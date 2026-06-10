@@ -2,7 +2,6 @@ package in.hridaykh.moregenerators.content.solar;
 
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import in.hridaykh.moregenerators.ModLang;
-import in.hridaykh.moregenerators.MoreGenerators;
 import in.hridaykh.moregenerators.collections.ModBlockEntities;
 import in.hridaykh.moregenerators.collections.ModBlocks;
 import net.minecraft.core.BlockPos;
@@ -57,12 +56,9 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 
 		Direction direction = this.getBlockState().getBedDirection(this.level, this.worldPosition);
 		float sunAngle = this.level.getSunAngle(1.0f);
-		MoreGenerators.LOGGER.info("Sun Angle: " + sunAngle);
 		if (isAngled) {
 			sunAngle += direction == Direction.EAST ? Mth.PI / 4 : 0;
 			sunAngle -= direction == Direction.WEST ? Mth.PI / 4 : 0;
-			MoreGenerators.LOGGER.info("Direction: " + direction);
-			MoreGenerators.LOGGER.info("Sun Angle Changed: " + sunAngle);
 		}
 
 		float sunIntensity = Math.max(0.0f, baseLight * Mth.cos(sunAngle) / 15.0f);
@@ -91,14 +87,12 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 	public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
 		float current = Mth.abs((float) this.voltageSourceCoupling.getCurrent());
 
-		// Dynamically grab the current internal resistance from the simulation
-		// framework
-		double dynamicResistance = this.voltageSourceCoupling.getResistance();
-
+		// double dynamicResistance = this.voltageSourceCoupling.getResistance();
 		// V_terminal = V_source - (I * R)
 		// Note: If your grid current returns negative for generation, change the '-' to
 		// '+' accordingly
-		double terminalVolt = (current * dynamicResistance);
+		// double terminalVolt = (current * dynamicResistance);
+		double terminalVolt = this.voltageSourceCoupling.getVoltage();
 
 		double currentGenerated = Math.abs(current);
 

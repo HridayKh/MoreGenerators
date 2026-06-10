@@ -17,10 +17,12 @@ public class mLootTableBlockProvider extends BlockLootSubProvider {
 
 	@Override
 	protected void generate() {
-		dropSelf(ModBlocks.LIGHT_RESISTOR.get());
-		dropSelf(ModBlocks.SOLAR_PANEL.get());
-		dropSelf(ModBlocks.ANGLED_SOLAR_PANEL.get());
-		dropSelf(ModBlocks.BUFF_POTATO_BATTERY.get());
+		// dropSelf(ModBlocks.LIGHT_RESISTOR.get());
+		// dropSelf(ModBlocks.SOLAR_PANEL.get());
+		// dropSelf(ModBlocks.ANGLED_SOLAR_PANEL.get());
+		// dropSelf(ModBlocks.BUFF_POTATO_BATTERY.get());
+		// dropSelf(ModBlocks.SIMPLE_MULTIBLOCK.get());
+		ModBlocks.BLOCKS.getEntries().stream().map(deferredHolder -> (Block) deferredHolder.get()).forEach(this::dropSelf);
 	}
 
 	@Override
