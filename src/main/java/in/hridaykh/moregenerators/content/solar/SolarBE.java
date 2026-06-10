@@ -19,9 +19,10 @@ import org.patryk3211.powergrid.utility.Unit;
 import java.util.List;
 
 public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformation {
-	public static final float PEAK_POWER = 200.0f;
-	public static final float INTERNAL_RESISTANCE = 1f;
-	public static final float PEAK_VOLTAGE = Mth.sqrt(PEAK_POWER * INTERNAL_RESISTANCE);
+	public static final float PEAK_POWER = 250f;
+	public static final float BASE_INTERNAL_RESISTANCE = 0.05f;
+	public static final float PEAK_VOLTAGE = 20f;
+	private float smoothedInternalResistance = BASE_INTERNAL_RESISTANCE;
 
 	private VoltageSourceCoupling voltageSourceCoupling;
 	private boolean overwrite = false;
@@ -34,8 +35,8 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 		builder.setTerminalCount(2);
 		FloatingNode positive = builder.terminalNode(0);
 		FloatingNode negative = builder.terminalNode(1);
-
-		this.voltageSourceCoupling = builder.addInternalNode(VoltageSourceCoupling.class, positive, negative, INTERNAL_RESISTANCE);
+		this.voltageSourceCoupling = builder.addInternalNode(VoltageSourceCoupling.class, positive, negative, BASE_INTERNAL_RESISTANCE);
+		this.voltageSourceCoupling.setVoltage(0);
 	}
 
 	@SuppressWarnings("null")
@@ -46,17 +47,50 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 			this.voltageSourceCoupling.setVoltage(0);
 			return;
 		}
+
 		int baseLight = this.level.getBrightness(LightLayer.SKY, this.worldPosition) - this.level.getSkyDarken();
-		float sunIntensity = Math.max(0.0F, baseLight * Mth.cos(this.level.getSunAngle(1.0F)) / 15);
-		this.voltageSourceCoupling.setVoltage(PEAK_VOLTAGE * sunIntensity);
+		float sunIntensity = Math.max(0.0f, baseLight * Mth.cos(this.level.getSunAngle(1.0f)) / 15.0f);
+		float voltage = PEAK_VOLTAGE * sunIntensity;
+		float maxPower = PEAK_POWER * sunIntensity;
+
+		float currentDrawn = (float) Math.abs(this.voltageSourceCoupling.getCurrent());
+		float currentPower = voltage * currentDrawn;
+
+		float targetResistance = BASE_INTERNAL_RESISTANCE;
+
+		if (currentPower > maxPower && currentDrawn > 0.001f) {
+			float targetTotalResistance = (voltage * voltage) / maxPower;
+			float estimatedExternalResistance = voltage / currentDrawn;
+			targetResistance = Math.max(BASE_INTERNAL_RESISTANCE, targetTotalResistance - estimatedExternalResistance);
+		}
+
+		float lerpFactor = 0.25f;
+		smoothedInternalResistance = smoothedInternalResistance + lerpFactor * (targetResistance - smoothedInternalResistance);
+
+		// Set the dampened resistance
+		this.voltageSourceCoupling.setResistance(smoothedInternalResistance);
+		this.voltageSourceCoupling.setVoltage(voltage);
 	}
 
 	@Override
 	public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
-		var terminalVolt = this.voltageSourceCoupling.getVoltage() - this.voltageSourceCoupling.getCurrent() * INTERNAL_RESISTANCE;
+		float current = Mth.abs((float) this.voltageSourceCoupling.getCurrent());
+
+		// Dynamically grab the current internal resistance from the simulation framework
+		double dynamicResistance = this.voltageSourceCoupling.getResistance();
+
+		// V_terminal = V_source - (I * R)
+		// Note: If your grid current returns negative for generation, change the '-' to '+' accordingly
+		double terminalVolt = (current * dynamicResistance);
+
+		double currentGenerated = Math.abs(current);
+
+		// Display Voltage
 		ModLang.builder().text(String.format("%.2f", terminalVolt)).add(Component.nullToEmpty(" ")).add(Unit.VOLTAGE.get()).forGoggles(tooltip, 1);
-		ModLang.builder().text(String.format("%.2f", -this.voltageSourceCoupling.getCurrent())).add(Component.nullToEmpty(" ")).add(Unit.CURRENT.get())
-				.forGoggles(tooltip, 1);
+
+		// Display Current
+		ModLang.builder().text(String.format("%.2f", currentGenerated)).add(Component.nullToEmpty(" ")).add(Unit.CURRENT.get()).forGoggles(tooltip, 1);
+
 		return true;
 	}
 

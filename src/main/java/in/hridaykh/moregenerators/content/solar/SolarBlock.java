@@ -38,8 +38,8 @@ public class SolarBlock extends ElectricBlock implements IBE<SolarBE>, IHaveElec
 	private static final TerminalBoundingBox[] TERMINALS;
 
 	static {
-		var t1 = new TerminalBoundingBox(IDecoratedTerminal.POSITIVE, 10.0F, 1.0F, 0.0F, 12.0F, 2.0F, 1.0F).withColor(16726843);
-		var t2 = new TerminalBoundingBox(IDecoratedTerminal.NEGATIVE, 4.0F, 1.0F, 15.0F, 6.0F, 2.0F, 16.0F).withColor(3899647);
+		var t1 = new TerminalBoundingBox(IDecoratedTerminal.POSITIVE, 10.0F, 1.0F, 0.0F, 12.0F, 3.0F, 1.0F).withColor(16726843);
+		var t2 = new TerminalBoundingBox(IDecoratedTerminal.NEGATIVE, 4.0F, 1.0F, 15.0F, 6.0F, 3.0F, 16.0F).withColor(3899647);
 		TERMINALS = new TerminalBoundingBox[] { t1, t2 };
 	}
 
