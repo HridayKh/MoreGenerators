@@ -13,11 +13,8 @@ glass pane + phosphorus + silicon + copper nugget -> solar cell
 
 
 
-right click to clean panels
-panel multiblocks for no wiring hell (config dir for parrallel and series)
-changing resistance
-lower resistance overall
-solar cells om circuits
+panel multiblocks for no wiring hell (config direction for parrallel and series)
+solar cells on circuits
 battery multiblocks
 make the exising lead acid usable
 angled solar panels that generate based on their rotation; so if theyre facing west then their peak is a lot earlier; same as flat if facing south/north

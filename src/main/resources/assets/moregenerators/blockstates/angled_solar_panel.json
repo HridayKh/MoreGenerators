@@ -1,0 +1,20 @@
+{
+	"variants": {
+		"facing=north": {
+			"model": "moregenerators:block/angled_solar_panel",
+			"y": 0
+		},
+		"facing=south": {
+			"model": "moregenerators:block/angled_solar_panel",
+			"y": 180
+		},
+		"facing=east": {
+			"model": "moregenerators:block/angled_solar_panel",
+			"y": 90
+		},
+		"facing=west": {
+			"model": "moregenerators:block/angled_solar_panel",
+			"y": 270
+		}
+	}
+}

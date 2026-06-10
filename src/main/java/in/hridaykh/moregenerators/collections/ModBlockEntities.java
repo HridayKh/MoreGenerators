@@ -20,6 +20,9 @@ public class ModBlockEntities {
 	public static final Supplier<BlockEntityType<SolarBE>> SOLAR_PANEL_BE = BLOCK_ENTITIES.register("solar_panel",
 			() -> BlockEntityType.Builder.of(SolarBE::new, ModBlocks.SOLAR_PANEL.get()).build(null));
 	@SuppressWarnings("null")
+	public static final Supplier<BlockEntityType<SolarBE>> ANGLED_SOLAR_PANEL_BE = BLOCK_ENTITIES.register("angled_solar_panel",
+			() -> BlockEntityType.Builder.of(SolarBE::new, ModBlocks.ANGLED_SOLAR_PANEL.get()).build(null));
+	@SuppressWarnings("null")
 	public static final Supplier<BlockEntityType<BuffPotatoBatteryBE>> BUFF_POTATO_BATTERY_BE = BLOCK_ENTITIES.register("buff_potato_battery",
 			() -> BlockEntityType.Builder.of(BuffPotatoBatteryBE::new, ModBlocks.BUFF_POTATO_BATTERY.get()).build(null));
 

@@ -14,15 +14,16 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.function.Supplier;
 
-
 public class ModBlocks {
 	public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MoreGenerators.MOD_ID);
 
-	public static final DeferredBlock<Resistor> LIGHT_RESISTOR = registerBlockWithItem("resistor",
-			() -> new Resistor(BlockBehaviour.Properties.of().instabreak()));
+	public static final DeferredBlock<Resistor> LIGHT_RESISTOR = registerBlockWithItem("resistor", () -> new Resistor(BlockBehaviour.Properties.of().instabreak()));
 
 	public static final DeferredBlock<SolarBlock> SOLAR_PANEL = registerBlockWithItem("solar_panel",
 			() -> new SolarBlock(BlockBehaviour.Properties.of().instabreak()));
+
+	public static final DeferredBlock<SolarBlock> ANGLED_SOLAR_PANEL = registerBlockWithItem("angled_solar_panel",
+			() -> new SolarBlock(BlockBehaviour.Properties.of().instabreak().noOcclusion()));
 
 	public static final DeferredBlock<BuffPotatoBatteryBlock> BUFF_POTATO_BATTERY = registerBlockWithItem("buff_potato_battery",
 			() -> new BuffPotatoBatteryBlock(BlockBehaviour.Properties.of().instabreak()));
@@ -30,6 +31,7 @@ public class ModBlocks {
 	public static void register(IEventBus eventBus) {
 		CreativeTabs.addItemToTab(LIGHT_RESISTOR, CreativeTabs.CREATIVE_TABS[0]);
 		CreativeTabs.addItemToTab(SOLAR_PANEL, CreativeTabs.CREATIVE_TABS[0]);
+		CreativeTabs.addItemToTab(ANGLED_SOLAR_PANEL, CreativeTabs.CREATIVE_TABS[0]);
 		CreativeTabs.addItemToTab(BUFF_POTATO_BATTERY, CreativeTabs.CREATIVE_TABS[0]);
 
 		BLOCKS.register(eventBus);

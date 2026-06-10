@@ -4,10 +4,9 @@
 	"item.moregenerators.silicon": "Silicon",
 	"item.moregenerators.phosphorus": "Phosphorus",
 	"block.moregenerators.solar_panel": "Solar Panel",
+	"block.moregenerators.angled_solar_panel": "Angled Solar Panel",
 	"block.moregenerators.buff_potato_battery": "Buff Potato Battery",
 	"block.moregenerators.resistor": "Light Resistor",
 	"creativetab.moregenerators.more_generators": "More Generators",
-	"moregenerators.devices.resistor.resistance": "Resistance: %s",
-	"moregenerators.gui.solar_panel.voltage": "Terminal Voltage:",
-	"moregenerators.gui.solar_panel.current": "Current:"
+	"moregenerators.devices.resistor.resistance": "Resistance: %s"
 }

@@ -2,8 +2,11 @@ package in.hridaykh.moregenerators.content.solar;
 
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import in.hridaykh.moregenerators.ModLang;
+import in.hridaykh.moregenerators.MoreGenerators;
 import in.hridaykh.moregenerators.collections.ModBlockEntities;
+import in.hridaykh.moregenerators.collections.ModBlocks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -22,13 +25,15 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 	public static final float PEAK_POWER = 250f;
 	public static final float BASE_INTERNAL_RESISTANCE = 0.05f;
 	public static final float PEAK_VOLTAGE = 20f;
-	private float smoothedInternalResistance = BASE_INTERNAL_RESISTANCE;
+	public float smoothedInternalResistance = BASE_INTERNAL_RESISTANCE;
+	private boolean isAngled = false;
 
-	private VoltageSourceCoupling voltageSourceCoupling;
-	private boolean overwrite = false;
+	public VoltageSourceCoupling voltageSourceCoupling;
+	public boolean overwrite = false;
 
 	public SolarBE(BlockPos pos, BlockState state) {
-		super(ModBlockEntities.SOLAR_PANEL_BE.get(), pos, state);
+		super(state.is(ModBlocks.SOLAR_PANEL.get()) ? ModBlockEntities.SOLAR_PANEL_BE.get() : ModBlockEntities.ANGLED_SOLAR_PANEL_BE.get(), pos, state);
+		isAngled = state.is(ModBlocks.ANGLED_SOLAR_PANEL.get());
 	}
 
 	public void buildCircuit(IElectricEntity.CircuitBuilder builder) {
@@ -49,7 +54,18 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 		}
 
 		int baseLight = this.level.getBrightness(LightLayer.SKY, this.worldPosition) - this.level.getSkyDarken();
-		float sunIntensity = Math.max(0.0f, baseLight * Mth.cos(this.level.getSunAngle(1.0f)) / 15.0f);
+
+		Direction direction = this.getBlockState().getBedDirection(this.level, this.worldPosition);
+		float sunAngle = this.level.getSunAngle(1.0f);
+		MoreGenerators.LOGGER.info("Sun Angle: " + sunAngle);
+		if (isAngled) {
+			sunAngle += direction == Direction.EAST ? Mth.PI / 4 : 0;
+			sunAngle -= direction == Direction.WEST ? Mth.PI / 4 : 0;
+			MoreGenerators.LOGGER.info("Direction: " + direction);
+			MoreGenerators.LOGGER.info("Sun Angle Changed: " + sunAngle);
+		}
+
+		float sunIntensity = Math.max(0.0f, baseLight * Mth.cos(sunAngle) / 15.0f);
 		float voltage = PEAK_VOLTAGE * sunIntensity;
 		float maxPower = PEAK_POWER * sunIntensity;
 
@@ -58,7 +74,7 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 
 		float targetResistance = BASE_INTERNAL_RESISTANCE;
 
-		if (currentPower > maxPower && currentDrawn > 0.001f) {
+		if (currentPower > maxPower) {
 			float targetTotalResistance = (voltage * voltage) / maxPower;
 			float estimatedExternalResistance = voltage / currentDrawn;
 			targetResistance = Math.max(BASE_INTERNAL_RESISTANCE, targetTotalResistance - estimatedExternalResistance);
@@ -67,7 +83,6 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 		float lerpFactor = 0.25f;
 		smoothedInternalResistance = smoothedInternalResistance + lerpFactor * (targetResistance - smoothedInternalResistance);
 
-		// Set the dampened resistance
 		this.voltageSourceCoupling.setResistance(smoothedInternalResistance);
 		this.voltageSourceCoupling.setVoltage(voltage);
 	}
@@ -76,11 +91,13 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 	public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
 		float current = Mth.abs((float) this.voltageSourceCoupling.getCurrent());
 
-		// Dynamically grab the current internal resistance from the simulation framework
+		// Dynamically grab the current internal resistance from the simulation
+		// framework
 		double dynamicResistance = this.voltageSourceCoupling.getResistance();
 
 		// V_terminal = V_source - (I * R)
-		// Note: If your grid current returns negative for generation, change the '-' to '+' accordingly
+		// Note: If your grid current returns negative for generation, change the '-' to
+		// '+' accordingly
 		double terminalVolt = (current * dynamicResistance);
 
 		double currentGenerated = Math.abs(current);

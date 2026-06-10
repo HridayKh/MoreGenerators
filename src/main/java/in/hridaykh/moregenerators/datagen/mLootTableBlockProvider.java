@@ -19,6 +19,7 @@ public class mLootTableBlockProvider extends BlockLootSubProvider {
 	protected void generate() {
 		dropSelf(ModBlocks.LIGHT_RESISTOR.get());
 		dropSelf(ModBlocks.SOLAR_PANEL.get());
+		dropSelf(ModBlocks.ANGLED_SOLAR_PANEL.get());
 		dropSelf(ModBlocks.BUFF_POTATO_BATTERY.get());
 	}
 

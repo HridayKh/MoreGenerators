@@ -84,7 +84,7 @@ public class SolarBlock extends ElectricBlock implements IBE<SolarBE>, IHaveElec
 	@Override
 	public void appendProperties(ItemStack stack, Player player, List<Component> tooltip) {
 		ModLang.builder().add(Component.nullToEmpty("Peak Power: ")).add(Lang.number(SolarBE.PEAK_POWER)).add(Unit.POWER.get()).addTo(tooltip);
-		ModLang.builder().add(Component.nullToEmpty("Internal Resistance: ")).add(Lang.number(SolarBE.INTERNAL_RESISTANCE)).add(Unit.RESISTANCE.get())
+		ModLang.builder().add(Component.nullToEmpty("Internal Resistance: ")).add(Lang.number(SolarBE.BASE_INTERNAL_RESISTANCE)).add(Unit.RESISTANCE.get())
 				.addTo(tooltip);
 	}
 }
