@@ -25,10 +25,9 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 	public static final float BASE_INTERNAL_RESISTANCE = 0.05f;
 	public static final float PEAK_VOLTAGE = 20f;
 	public float smoothedInternalResistance = BASE_INTERNAL_RESISTANCE;
-	private boolean isAngled = false;
-
 	public VoltageSourceCoupling voltageSourceCoupling;
 	public boolean overwrite = false;
+	private boolean isAngled;
 
 	public SolarBE(BlockPos pos, BlockState state) {
 		super(state.is(ModBlocks.SOLAR_PANEL.get()) ? ModBlockEntities.SOLAR_PANEL_BE.get() : ModBlockEntities.ANGLED_SOLAR_PANEL_BE.get(), pos, state);
@@ -63,6 +62,15 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 
 		float sunIntensity = Math.max(0.0f, baseLight * Mth.cos(sunAngle) / 15.0f);
 		float voltage = PEAK_VOLTAGE * sunIntensity;
+
+		float lerpFactor = 0.25f;
+		smoothedInternalResistance += lerpFactor * (getTargetResistance(sunIntensity, voltage) - smoothedInternalResistance);
+
+		this.voltageSourceCoupling.setResistance(smoothedInternalResistance);
+		this.voltageSourceCoupling.setVoltage(voltage);
+	}
+
+	private float getTargetResistance(float sunIntensity, float voltage) {
 		float maxPower = PEAK_POWER * sunIntensity;
 
 		float currentDrawn = (float) Math.abs(this.voltageSourceCoupling.getCurrent());
@@ -75,12 +83,7 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 			float estimatedExternalResistance = voltage / currentDrawn;
 			targetResistance = Math.max(BASE_INTERNAL_RESISTANCE, targetTotalResistance - estimatedExternalResistance);
 		}
-
-		float lerpFactor = 0.25f;
-		smoothedInternalResistance = smoothedInternalResistance + lerpFactor * (targetResistance - smoothedInternalResistance);
-
-		this.voltageSourceCoupling.setResistance(smoothedInternalResistance);
-		this.voltageSourceCoupling.setVoltage(voltage);
+		return targetResistance;
 	}
 
 	@Override
@@ -107,22 +110,19 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 
 	protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
 		super.read(tag, registries, clientPacket);
-		if (tag.contains("Overwrite"))
-			this.overwrite = tag.getBoolean("Overwrite");
+		if (tag.contains("Overwrite")) this.overwrite = tag.getBoolean("Overwrite");
 		this.voltageSourceCoupling.setVoltage(tag.getFloat("NodeValue"));
 	}
 
 	protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
 		super.write(tag, registries, clientPacket);
-		if (this.overwrite)
-			tag.putBoolean("Overwrite", true);
+		if (this.overwrite) tag.putBoolean("Overwrite", true);
 		tag.putFloat("NodeValue", (float) this.voltageSourceCoupling.getVoltage());
 	}
 
 	public void writeSafe(CompoundTag tag, HolderLookup.Provider registries) {
 		super.writeSafe(tag, registries);
-		if (this.overwrite)
-			tag.putBoolean("Overwrite", true);
+		if (this.overwrite) tag.putBoolean("Overwrite", true);
 		tag.putFloat("NodeValue", (float) this.voltageSourceCoupling.getVoltage());
 	}
 
