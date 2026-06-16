@@ -20,6 +20,7 @@ public class mItemModelProvider extends net.neoforged.neoforge.client.model.gene
 		basicItem(ModItems.SILICON.get());
 
 		this.withExistingParent(ModBlocks.SOLAR_PANEL.getId().getPath(), modLoc("block/solar_panel"));
+		this.withExistingParent(ModBlocks.MODULAR_PANEL.getId().getPath(), modLoc("block/modular_panel"));
 		this.withExistingParent(ModBlocks.ANGLED_SOLAR_PANEL.getId().getPath(), modLoc("block/angled_solar_panel"));
 
 		this.withExistingParent(ModItems.LED_BULB.getId().getPath(), modLoc("block/lamps/light_bulb"));

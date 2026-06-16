@@ -42,6 +42,7 @@ public class mRecipeProvider extends net.minecraft.data.recipes.RecipeProvider i
 		shapelessRecipe(ro, ModBlocks.SOLAR_PANEL, 1, ModItems.SILICON, ModItems.PHOSPHORUS, Items.GLASS_PANE, AllItems.COPPER_NUGGET);
 		shapelessRecipe(ro, ModBlocks.SOLAR_PANEL, 1, ModBlocks.ANGLED_SOLAR_PANEL);
 		shapelessRecipe(ro, ModBlocks.ANGLED_SOLAR_PANEL, 1, ModBlocks.SOLAR_PANEL);
+		shapelessRecipe(ro, ModBlocks.MODULAR_PANEL, 1, ModBlocks.SOLAR_PANEL, ModdedItems.WIRE);
 	}
 
 	private void shapelessRecipe(RecipeOutput ro, ItemLike out, int q, ItemLike... ins) {

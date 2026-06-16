@@ -7,9 +7,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.List;
+
 import org.jetbrains.annotations.NotNull;
 import org.patryk3211.powergrid.electricity.sim.node.FloatingNode;
 import org.patryk3211.powergrid.electricity.sim.node.VoltageSourceCoupling;
@@ -27,8 +31,6 @@ public class ModularPanelBE extends SolarBE implements IMultiBlockEntityContaine
 		super(ModBlockEntities.MODULAR_PANEL_BE.get(), pos, state);
 	}
 
-	// --- PowerGrid Electrical Routing ---
-
 	@Override
 	public void buildCircuit(CircuitBuilder builder) {
 		if (!isController())
@@ -42,12 +44,27 @@ public class ModularPanelBE extends SolarBE implements IMultiBlockEntityContaine
 	}
 
 	@Override
+	public void electricalTick() {
+		if (!isController() || this.voltageSourceCoupling == null) {
+			return;
+		}
+		super.electricalTick();
+	}
+
+	@Override
 	public void setVoltageAndResistance(float voltage, float internalResistance) {
 		if (!isController() || this.voltageSourceCoupling == null)
 			return;
 		// it is a circuit of `getWidth()` modules of (`getWidth()` panels in connected series)
 		this.voltageSourceCoupling.setVoltage(voltage * getWidth());
 		this.voltageSourceCoupling.setResistance(internalResistance);
+	}
+
+	@Override
+	public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
+		if (!isController() || this.voltageSourceCoupling == null)
+			return false;
+		return super.addToGoggleTooltip(tooltip, isPlayerSneaking);
 	}
 
 	// --- IMultiBlockEntityContainer Implementation ---

@@ -15,7 +15,7 @@ public class mBlockStateProvider extends BlockStateProvider {
 
 	@Override
 	protected void registerStatesAndModels() {
-		// customModel(ModBlocks.SOLAR_PANEL);
+		customModel(ModBlocks.MODULAR_PANEL);
 		customModel(ModBlocks.BUFF_POTATO_BATTERY);
 	}
 

@@ -13,6 +13,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+
+import org.jetbrains.annotations.Nullable;
 import org.patryk3211.powergrid.electricity.base.ElectricBlockEntity;
 import org.patryk3211.powergrid.electricity.base.IElectricEntity;
 import org.patryk3211.powergrid.electricity.sim.node.FloatingNode;
@@ -26,6 +28,7 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 	public static final float BASE_INTERNAL_RESISTANCE = 0.05f;
 	public static final float PEAK_VOLTAGE = 20f;
 	public float smoothedInternalResistance = BASE_INTERNAL_RESISTANCE;
+	@Nullable
 	public VoltageSourceCoupling voltageSourceCoupling;
 	public boolean overwrite = false;
 	private boolean isAngled;
@@ -55,12 +58,11 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 			this.voltageSourceCoupling.setVoltage(0);
 			return;
 		}
+		int baseLight = this.level.getLightEngine().getLayerListener(LightLayer.SKY).getLightValue(this.worldPosition.above()) - this.level.getSkyDarken();
 
-		int baseLight = this.level.getBrightness(LightLayer.SKY, this.worldPosition) - this.level.getSkyDarken();
-
-		Direction direction = this.getBlockState().getBedDirection(this.level, this.worldPosition);
 		float sunAngle = this.level.getSunAngle(1.0f);
 		if (isAngled) {
+			Direction direction = this.getBlockState().getBedDirection(this.level, this.worldPosition);
 			sunAngle += direction == Direction.EAST ? Mth.PI / 4 : 0;
 			sunAngle -= direction == Direction.WEST ? Mth.PI / 4 : 0;
 		}
@@ -79,6 +81,8 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 	}
 
 	private float getTargetResistance(float sunIntensity, float voltage) {
+		if (this.voltageSourceCoupling == null)
+			return BASE_INTERNAL_RESISTANCE;
 		float maxPower = PEAK_POWER * sunIntensity;
 
 		float currentDrawn = (float) Math.abs(this.voltageSourceCoupling.getCurrent());
@@ -96,23 +100,15 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 
 	@Override
 	public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
+		if (this.voltageSourceCoupling == null)
+			return false;
 		float current = Mth.abs((float) this.voltageSourceCoupling.getCurrent());
-
-		// double dynamicResistance = this.voltageSourceCoupling.getResistance();
-		// V_terminal = V_source - (I * R)
-		// Note: If your grid current returns negative for generation, change the '-' to
-		// '+' accordingly
-		// double terminalVolt = (current * dynamicResistance);
 		double terminalVolt = this.voltageSourceCoupling.getVoltage();
-
 		double currentGenerated = Math.abs(current);
-
 		// Display Voltage
 		ModLang.builder().text(String.format("%.2f", terminalVolt)).add(Component.nullToEmpty(" ")).add(Unit.VOLTAGE.get()).forGoggles(tooltip, 1);
-
 		// Display Current
 		ModLang.builder().text(String.format("%.2f", currentGenerated)).add(Component.nullToEmpty(" ")).add(Unit.CURRENT.get()).forGoggles(tooltip, 1);
-
 		return true;
 	}
 
@@ -120,21 +116,24 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 		super.read(tag, registries, clientPacket);
 		if (tag.contains("Overwrite"))
 			this.overwrite = tag.getBoolean("Overwrite");
-		this.voltageSourceCoupling.setVoltage(tag.getFloat("NodeValue"));
+		if (this.voltageSourceCoupling != null)
+			this.voltageSourceCoupling.setVoltage(tag.getFloat("NodeValue"));
 	}
 
 	protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
 		super.write(tag, registries, clientPacket);
 		if (this.overwrite)
 			tag.putBoolean("Overwrite", true);
-		tag.putFloat("NodeValue", (float) this.voltageSourceCoupling.getVoltage());
+		if (this.voltageSourceCoupling != null)
+			tag.putFloat("NodeValue", (float) this.voltageSourceCoupling.getVoltage());
 	}
 
 	public void writeSafe(CompoundTag tag, HolderLookup.Provider registries) {
 		super.writeSafe(tag, registries);
 		if (this.overwrite)
 			tag.putBoolean("Overwrite", true);
-		tag.putFloat("NodeValue", (float) this.voltageSourceCoupling.getVoltage());
+		if (this.voltageSourceCoupling != null)
+			tag.putFloat("NodeValue", (float) this.voltageSourceCoupling.getVoltage());
 	}
 
 }
