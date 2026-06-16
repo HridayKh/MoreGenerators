@@ -1,4 +1,4 @@
-package in.hridaykh.moregenerators;
+package in.hridaykh.moregenerators.content.solar;
 
 import com.simibubi.create.api.connectivity.ConnectivityHandler;
 import com.simibubi.create.foundation.block.IBE;
@@ -20,16 +20,16 @@ import org.patryk3211.powergrid.electricity.info.IHaveElectricProperties;
 
 import java.util.List;
 
-public class SimpleMultiBlock extends ElectricBlock implements IAcceptConnector, IBE<SimpleMultiBlockEntity>, IHaveElectricProperties {
+public class ModularPanelBlock extends ElectricBlock implements IAcceptConnector, IBE<ModularPanelBE>, IHaveElectricProperties {
 
-	public SimpleMultiBlock(Properties properties) {
+	public ModularPanelBlock(Properties properties) {
 		super(properties);
 	}
 
 	@Nullable
 	@Override
 	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-		return new SimpleMultiBlockEntity(pos, state);
+		return new ModularPanelBE(pos, state);
 	}
 
 	@Override
@@ -37,20 +37,17 @@ public class SimpleMultiBlock extends ElectricBlock implements IAcceptConnector,
 		super.onPlace(state, level, pos, oldState, isMoving);
 		if (level.isClientSide)
 			return;
-
-		if (level.getBlockEntity(pos) instanceof SimpleMultiBlockEntity multiBe) {
+		if (level.getBlockEntity(pos) instanceof ModularPanelBE multiBe)
 			ConnectivityHandler.formMulti(multiBe);
-		}
 	}
 
 	@Override
 	public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-		if (state.getBlock() != newState.getBlock()) {
-			if (level.getBlockEntity(pos) instanceof SimpleMultiBlockEntity multiBe) {
-				ConnectivityHandler.splitMulti(multiBe);
-			}
-			super.onRemove(state, level, pos, newState, isMoving);
-		}
+		if (state.getBlock() == newState.getBlock())
+			return;
+		if (level.getBlockEntity(pos) instanceof ModularPanelBE multiBe)
+			ConnectivityHandler.splitMulti(multiBe);
+		super.onRemove(state, level, pos, newState, isMoving);
 	}
 
 	@Override
@@ -71,16 +68,16 @@ public class SimpleMultiBlock extends ElectricBlock implements IAcceptConnector,
 	@Override
 	public void appendProperties(ItemStack stack, Player player, List<Component> tooltip) {
 		// Display resistance information in tooltips
-//		Resistance.series(SimpleMultiBlockEntity.BASE_INTERNAL_RESISTANCE, player, tooltip);
+		// Resistance.series(SimpleMultiBlockEntity.BASE_INTERNAL_RESISTANCE, player, tooltip);
 	}
 
 	@Override
-	public Class<SimpleMultiBlockEntity> getBlockEntityClass() {
-		return SimpleMultiBlockEntity.class;
+	public Class<ModularPanelBE> getBlockEntityClass() {
+		return ModularPanelBE.class;
 	}
 
 	@Override
-	public BlockEntityType<? extends SimpleMultiBlockEntity> getBlockEntityType() {
-		return ModBlockEntities.SIMPLE_MULTIBLOCK_BE.get();
+	public BlockEntityType<? extends ModularPanelBE> getBlockEntityType() {
+		return ModBlockEntities.MODULAR_PANEL_BE.get();
 	}
 }

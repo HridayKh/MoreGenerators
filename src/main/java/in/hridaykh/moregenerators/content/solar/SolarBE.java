@@ -11,6 +11,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.patryk3211.powergrid.electricity.base.ElectricBlockEntity;
 import org.patryk3211.powergrid.electricity.base.IElectricEntity;
@@ -30,8 +31,12 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 	private boolean isAngled;
 
 	public SolarBE(BlockPos pos, BlockState state) {
-		super(state.is(ModBlocks.SOLAR_PANEL.get()) ? ModBlockEntities.SOLAR_PANEL_BE.get() : ModBlockEntities.ANGLED_SOLAR_PANEL_BE.get(), pos, state);
+		this(state.is(ModBlocks.SOLAR_PANEL.get()) ? ModBlockEntities.SOLAR_PANEL_BE.get() : ModBlockEntities.ANGLED_SOLAR_PANEL_BE.get(), pos, state);
 		isAngled = state.is(ModBlocks.ANGLED_SOLAR_PANEL.get());
+	}
+
+	protected SolarBE(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+		super(type, pos, state);
 	}
 
 	public void buildCircuit(IElectricEntity.CircuitBuilder builder) {
@@ -65,8 +70,11 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 
 		float lerpFactor = 0.25f;
 		smoothedInternalResistance += lerpFactor * (getTargetResistance(sunIntensity, voltage) - smoothedInternalResistance);
+		setVoltageAndResistance(voltage, smoothedInternalResistance);
+	}
 
-		this.voltageSourceCoupling.setResistance(smoothedInternalResistance);
+	protected void setVoltageAndResistance(float voltage, float internalResistance) {
+		this.voltageSourceCoupling.setResistance(internalResistance);
 		this.voltageSourceCoupling.setVoltage(voltage);
 	}
 
@@ -110,19 +118,22 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 
 	protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
 		super.read(tag, registries, clientPacket);
-		if (tag.contains("Overwrite")) this.overwrite = tag.getBoolean("Overwrite");
+		if (tag.contains("Overwrite"))
+			this.overwrite = tag.getBoolean("Overwrite");
 		this.voltageSourceCoupling.setVoltage(tag.getFloat("NodeValue"));
 	}
 
 	protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
 		super.write(tag, registries, clientPacket);
-		if (this.overwrite) tag.putBoolean("Overwrite", true);
+		if (this.overwrite)
+			tag.putBoolean("Overwrite", true);
 		tag.putFloat("NodeValue", (float) this.voltageSourceCoupling.getVoltage());
 	}
 
 	public void writeSafe(CompoundTag tag, HolderLookup.Provider registries) {
 		super.writeSafe(tag, registries);
-		if (this.overwrite) tag.putBoolean("Overwrite", true);
+		if (this.overwrite)
+			tag.putBoolean("Overwrite", true);
 		tag.putFloat("NodeValue", (float) this.voltageSourceCoupling.getVoltage());
 	}
 
