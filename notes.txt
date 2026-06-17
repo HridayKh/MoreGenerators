@@ -4,12 +4,10 @@ redstone mix water -> weak redstone acid
 
 anode compact cathod compact conductive casing in weak restone acid -> low power battery
 
+
 glass pane + phosphorus + silicon + copper nugget -> solar cell
 4x solar cell -> solar panel
 
-
-
-panel multiblocks for no wiring hell (config direction for parrallel and series)
 solar cells on circuits
 battery multiblocks
 make the exising lead acid usable

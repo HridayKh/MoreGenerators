@@ -1,137 +1,151 @@
 package in.hridaykh.moregenerators.content.solar;
 
-import com.simibubi.create.foundation.blockEntity.IMultiBlockEntityContainer;
-
+import in.hridaykh.moregenerators.ModLang;
 import in.hridaykh.moregenerators.collections.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.Direction.Axis;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
 
-import org.jetbrains.annotations.NotNull;
+import org.patryk3211.powergrid.electricity.base.IElectricEntity;
 import org.patryk3211.powergrid.electricity.sim.node.FloatingNode;
+import org.patryk3211.powergrid.electricity.sim.node.IElectricNode;
 import org.patryk3211.powergrid.electricity.sim.node.VoltageSourceCoupling;
+import org.patryk3211.powergrid.utility.Unit;
 
-public class ModularPanelBE extends SolarBE implements IMultiBlockEntityContainer {
+import com.simibubi.create.api.connectivity.ConnectivityHandler;
 
-	public final int MAX_WIDTH = 3;
+public class ModularPanelBE extends AbstractModularPanelBE {
+
+	public final int MAX_WIDTH = 7;
 	public VoltageSourceCoupling voltageSourceCoupling;
-
-	protected boolean updatePrevented = false;
-	private BlockPos controllerPos;
-	private int width = 1;
 
 	public ModularPanelBE(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.MODULAR_PANEL_BE.get(), pos, state);
 	}
 
 	@Override
-	public void buildCircuit(CircuitBuilder builder) {
-		if (!isController())
-			return;
+	public void buildCircuit(IElectricEntity.CircuitBuilder builder) {
+		if (isController()) {
+			builder.setTerminalCount(2);
+			FloatingNode positive = builder.terminalNode(0);
+			FloatingNode negative = builder.terminalNode(1);
+			this.voltageSourceCoupling = builder.addInternalNode(VoltageSourceCoupling.class, positive, negative, BASE_INTERNAL_RESISTANCE);
+			this.voltageSourceCoupling.setVoltage(0);
 
-		builder.setTerminalCount(2);
-		FloatingNode positive = builder.terminalNode(0);
-		FloatingNode negative = builder.terminalNode(1);
-		this.voltageSourceCoupling = builder.addInternalNode(VoltageSourceCoupling.class, positive, negative, BASE_INTERNAL_RESISTANCE);
-		this.voltageSourceCoupling.setVoltage(0);
-	}
-
-	@Override
-	public void electricalTick() {
-		if (!isController() || this.voltageSourceCoupling == null) {
-			return;
+			// Tell all members to rebuild now that our coupling exists
+			rebuildMemberCircuits();
+		} else {
+			buildMemberCircuit(builder);
 		}
-		super.electricalTick();
 	}
 
-	@Override
-	public void setVoltageAndResistance(float voltage, float internalResistance) {
-		if (!isController() || this.voltageSourceCoupling == null)
+	private void buildMemberCircuit(IElectricEntity.CircuitBuilder builder) {
+		builder.setTerminalCount(2);
+
+		ModularPanelBE controller = getControllerBE();
+		if (controller == null || controller.voltageSourceCoupling == null)
 			return;
-		// it is a circuit of `getWidth()` modules of (`getWidth()` panels in connected series)
-		this.voltageSourceCoupling.setVoltage(voltage * getWidth());
-		this.voltageSourceCoupling.setResistance(internalResistance);
+
+		FloatingNode localPositive = builder.terminalNode(0);
+		FloatingNode localNegative = builder.terminalNode(1);
+
+		IElectricNode controllerPositive = controller.voltageSourceCoupling.getPositive();
+		IElectricNode controllerNegative = controller.voltageSourceCoupling.getNegative();
+
+		builder.connect(0.0001f, localPositive, controllerPositive);
+		builder.connect(0.0001f, localNegative, controllerNegative);
 	}
 
-	@Override
-	public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
-		if (!isController() || this.voltageSourceCoupling == null)
-			return false;
-		return super.addToGoggleTooltip(tooltip, isPlayerSneaking);
-	}
-
-	// --- IMultiBlockEntityContainer Implementation ---
-
-	@Override
-	public BlockPos getController() {
-		return controllerPos == null ? getBlockPos() : controllerPos;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public <T extends BlockEntity & IMultiBlockEntityContainer> T getControllerBE() {
-		if (level == null)
-			return null;
-		BlockEntity be = level.getBlockEntity(getController());
-		if (be instanceof IMultiBlockEntityContainer)
-			return (T) be;
-		return null;
-	}
-
-	@Override
-	public boolean isController() {
-		return getController().equals(getBlockPos());
-	}
-
-	@Override
-	public void setController(BlockPos pos) {
-		if (this.controllerPos != null && this.controllerPos.equals(pos))
+	private void rebuildMemberCircuits() {
+		if (level == null || !isController())
 			return;
-		this.controllerPos = pos;
-		setChanged();
-		sendData();
-	}
 
-	@Override
-	public void removeController(boolean keepContents) {
-		this.controllerPos = null;
-		this.width = 1;
-		setChanged();
-		sendData();
-	}
+		Direction.Axis axis = getMainConnectionAxis();
+		BlockPos origin = getBlockPos();
+		int width = getWidth();
 
-	@Override
-	public BlockPos getLastKnownPos() {
-		return getBlockPos();
-	}
+		for (int xOffset = 0; xOffset < width; xOffset++) {
+			for (int zOffset = 0; zOffset < width; zOffset++) {
+				BlockPos pos = switch (axis) {
+				case X -> origin.offset(1, xOffset, zOffset);
+				case Y -> origin.offset(xOffset, 1, zOffset);
+				case Z -> origin.offset(xOffset, zOffset, 1);
+				};
 
-	@Override
-	public void preventConnectivityUpdate() {
-		this.updatePrevented = true;
+				if (pos.equals(origin))
+					continue;
+
+				ModularPanelBE member = ConnectivityHandler.partAt(getType(), level, pos);
+				if (member == null)
+					continue;
+
+				member.getElectricBehaviour().rebuildCircuit(false);
+			}
+		}
+
 	}
 
 	@Override
 	public void notifyMultiUpdated() {
-		this.updatePrevented = false;
-		setChanged();
-		sendData();
+		super.notifyMultiUpdated();
+		getElectricBehaviour().rebuildCircuit(false);
+		if (isController())
+			rebuildMemberCircuits();
+	}
+
+	@SuppressWarnings("null")
+	@Override
+	public void electricalTick() {
+		if (!isController() || this.voltageSourceCoupling == null)
+			return;
+		if (this.level == null || this.level.isClientSide) {
+			this.voltageSourceCoupling.setVoltage(0);
+			return;
+		}
+
+		int baseLight = this.level.getLightEngine().getLayerListener(LightLayer.SKY).getLightValue(this.worldPosition.above()) - this.level.getSkyDarken();
+
+		float sunAngle = this.level.getSunAngle(1.0f);
+		float sunIntensity = Math.max(0.0f, baseLight * Mth.cos(sunAngle) / 15.0f);
+
+		float voltage = PEAK_VOLTAGE * sunIntensity * getWidth();
+		float maxPower = PEAK_POWER * sunIntensity * getWidth() * getWidth();
+
+		float targetResistance = BASE_INTERNAL_RESISTANCE;
+		float currentDrawn = (float) Math.abs(this.voltageSourceCoupling.getCurrent());
+		float currentPower = voltage * currentDrawn;
+
+		if (currentPower > maxPower && currentDrawn > 0) {
+			float targetTotalResistance = (voltage * voltage) / maxPower;
+			float estimatedExternalResistance = voltage / currentDrawn;
+			targetResistance = Math.max(BASE_INTERNAL_RESISTANCE, targetTotalResistance - estimatedExternalResistance);
+		}
+
+		float lerpFactor = 0.25f;
+		smoothedInternalResistance += lerpFactor * (targetResistance - smoothedInternalResistance);
+
+		this.voltageSourceCoupling.setVoltage(voltage);
+		this.voltageSourceCoupling.setResistance(smoothedInternalResistance);
 	}
 
 	@Override
-	public Direction.Axis getMainConnectionAxis() {
-		return Direction.Axis.Y;
-	}
-
-	@Override
-	public int getMaxLength(Direction.Axis longAxis, int width) {
-		return 1;
+	public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
+		if (this.voltageSourceCoupling == null)
+			return false;
+		ModLang.builder().text(String.format("%.2f", this.voltageSourceCoupling.getVoltage())).add(Component.nullToEmpty(" ")).add(Unit.VOLTAGE.get())
+				.forGoggles(tooltip, 1);
+		ModLang.builder().text(String.format("%.2f", Mth.abs((float) this.voltageSourceCoupling.getCurrent()))).add(Component.nullToEmpty(" "))
+				.add(Unit.CURRENT.get()).forGoggles(tooltip, 1);
+		ModLang.builder().add(Component.nullToEmpty(getWidth() + "s" + getWidth() + "p")).forGoggles(tooltip, 1);
+		if (isController())
+			ModLang.builder().add(Component.nullToEmpty("CONTROLLER!")).forGoggles(tooltip, 1);
+		return true;
 	}
 
 	@Override
@@ -140,64 +154,12 @@ public class ModularPanelBE extends SolarBE implements IMultiBlockEntityContaine
 	}
 
 	@Override
-	public int getHeight() {
+	public int getMaxLength(Direction.Axis longAxis, int width) {
 		return 1;
 	}
 
 	@Override
-	public void setHeight(int height) {
+	public Axis getMainConnectionAxis() {
+		return Direction.Axis.Y;
 	}
-
-	@Override
-	public int getWidth() {
-		return Math.max(width, 1);
-	}
-
-	@Override
-	public void setWidth(int width) {
-		this.width = width;
-	}
-
-	// --- NBT Data & Networking Updates ---
-
-	@Override
-	protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-		super.loadAdditional(tag, registries);
-		controllerPos = tag.contains("Controller") ? BlockPos.of(tag.getLong("Controller")) : null;
-		width = tag.contains("Width") ? tag.getInt("Width") : 1;
-	}
-
-	@SuppressWarnings("null")
-	public void sendData() {
-		if (level != null && !level.isClientSide)
-			level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-	}
-
-	@Override
-	public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
-		CompoundTag tag = super.getUpdateTag(registries);
-		saveAdditional(tag, registries);
-		return tag;
-	}
-
-	@Override
-	public @NotNull ClientboundBlockEntityDataPacket getUpdatePacket() {
-		return ClientboundBlockEntityDataPacket.create(this);
-	}
-
-	@Override
-	public void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
-		super.write(tag, registries, clientPacket);
-		if (controllerPos != null)
-			tag.putLong("Controller", controllerPos.asLong());
-		tag.putInt("Width", width);
-	}
-
-	@Override
-	public void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
-		super.read(tag, registries, clientPacket);
-		controllerPos = tag.contains("Controller") ? BlockPos.of(tag.getLong("Controller")) : null;
-		width = tag.contains("Width") ? tag.getInt("Width") : 1;
-	}
-
 }

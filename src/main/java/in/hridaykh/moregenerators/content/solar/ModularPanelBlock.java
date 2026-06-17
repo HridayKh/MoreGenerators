@@ -8,6 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
@@ -16,6 +17,9 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import org.jetbrains.annotations.Nullable;
 import org.patryk3211.powergrid.electricity.base.ElectricBlock;
@@ -25,10 +29,15 @@ import org.patryk3211.powergrid.electricity.info.IHaveElectricProperties;
 import java.util.List;
 
 public class ModularPanelBlock extends ElectricBlock implements IAcceptConnector, IBE<ModularPanelBE>, IHaveElectricProperties {
-	// private static final VoxelShape SHAPE = Shapes.or(box(0.0F, 0.0F, 0.0F, 16.0F, 1.0F, 16.0F), box(1.0F, 1.0F, 1.0F, 15.0F, 2.0F, 15.0F));
+	private static final VoxelShape SHAPE = Shapes.or(box(0.0F, 0.0F, 0.0F, 16.0F, 1.0F, 16.0F), box(1.0F, 1.0F, 1.0F, 15.0F, 2.0F, 15.0F));
 
 	public ModularPanelBlock(BlockBehaviour.Properties settings) {
 		super(settings);
+	}
+
+	@Override
+	public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+		return SHAPE;
 	}
 
 	@Nullable
@@ -62,7 +71,7 @@ public class ModularPanelBlock extends ElectricBlock implements IAcceptConnector
 
 	@Override
 	public boolean canConnect(LevelReader world, BlockPos pos, BlockState state, Direction side) {
-		return side != Direction.UP;
+		return side == Direction.DOWN;
 	}
 
 	@Override
