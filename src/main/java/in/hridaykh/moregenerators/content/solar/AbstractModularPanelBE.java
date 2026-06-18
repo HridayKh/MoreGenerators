@@ -14,7 +14,6 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public abstract class AbstractModularPanelBE extends SolarBE implements IMultiBlockEntityContainer {
 
-	public final int MAX_WIDTH = 10;
 	protected boolean updatePrevented = false;
 	private BlockPos controllerPos;
 	private int width = 1;

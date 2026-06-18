@@ -5,6 +5,8 @@ import in.hridaykh.moregenerators.collections.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.LightLayer;
@@ -16,17 +18,31 @@ import org.patryk3211.powergrid.electricity.base.IElectricEntity;
 import org.patryk3211.powergrid.electricity.sim.node.FloatingNode;
 import org.patryk3211.powergrid.electricity.sim.node.IElectricNode;
 import org.patryk3211.powergrid.electricity.sim.node.VoltageSourceCoupling;
-import org.patryk3211.powergrid.utility.Unit;
 
 import com.simibubi.create.api.connectivity.ConnectivityHandler;
 
 public class ModularPanelBE extends AbstractModularPanelBE {
 
-	public final int MAX_WIDTH = 7;
+	public final int MAX_WIDTH = 10;
 	public VoltageSourceCoupling voltageSourceCoupling;
 
 	public ModularPanelBE(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.MODULAR_PANEL_BE.get(), pos, state);
+	}
+
+	@Override
+	public int getMaxWidth() {
+		return MAX_WIDTH;
+	}
+
+	@Override
+	public int getMaxLength(Direction.Axis longAxis, int width) {
+		return 1;
+	}
+
+	@Override
+	public Axis getMainConnectionAxis() {
+		return Direction.Axis.Y;
 	}
 
 	@Override
@@ -37,8 +53,6 @@ public class ModularPanelBE extends AbstractModularPanelBE {
 			FloatingNode negative = builder.terminalNode(1);
 			this.voltageSourceCoupling = builder.addInternalNode(VoltageSourceCoupling.class, positive, negative, BASE_INTERNAL_RESISTANCE);
 			this.voltageSourceCoupling.setVoltage(0);
-
-			// Tell all members to rebuild now that our coupling exists
 			rebuildMemberCircuits();
 		} else {
 			buildMemberCircuit(builder);
@@ -65,30 +79,31 @@ public class ModularPanelBE extends AbstractModularPanelBE {
 	private void rebuildMemberCircuits() {
 		if (level == null || !isController())
 			return;
-
-		Direction.Axis axis = getMainConnectionAxis();
 		BlockPos origin = getBlockPos();
-		int width = getWidth();
-
-		for (int xOffset = 0; xOffset < width; xOffset++) {
-			for (int zOffset = 0; zOffset < width; zOffset++) {
-				BlockPos pos = switch (axis) {
-				case X -> origin.offset(1, xOffset, zOffset);
-				case Y -> origin.offset(xOffset, 1, zOffset);
-				case Z -> origin.offset(xOffset, zOffset, 1);
-				};
-
+		int w = getWidth();
+		int h = getHeight();
+		for (int xOffset = 0; xOffset < w; xOffset++) {
+			for (int zOffset = 0; zOffset < h; zOffset++) {
+				BlockPos pos = origin.offset(xOffset, 0, zOffset);
 				if (pos.equals(origin))
 					continue;
-
 				ModularPanelBE member = ConnectivityHandler.partAt(getType(), level, pos);
 				if (member == null)
 					continue;
-
 				member.getElectricBehaviour().rebuildCircuit(false);
 			}
 		}
+	}
 
+	@SuppressWarnings("null")
+	@Override
+	public void onLoad() {
+		super.onLoad();
+		if (level != null && !level.isClientSide) {
+			getElectricBehaviour().rebuildCircuit(false);
+			if (isController())
+				rebuildMemberCircuits();
+		}
 	}
 
 	@Override
@@ -138,28 +153,32 @@ public class ModularPanelBE extends AbstractModularPanelBE {
 	public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
 		if (this.voltageSourceCoupling == null)
 			return false;
-		ModLang.builder().text(String.format("%.2f", this.voltageSourceCoupling.getVoltage())).add(Component.nullToEmpty(" ")).add(Unit.VOLTAGE.get())
-				.forGoggles(tooltip, 1);
-		ModLang.builder().text(String.format("%.2f", Mth.abs((float) this.voltageSourceCoupling.getCurrent()))).add(Component.nullToEmpty(" "))
-				.add(Unit.CURRENT.get()).forGoggles(tooltip, 1);
-		ModLang.builder().add(Component.nullToEmpty(getWidth() + "s" + getWidth() + "p")).forGoggles(tooltip, 1);
+		ModLang.builder().add(Component.nullToEmpty(getWidth() + "x" + getWidth())).forGoggles(tooltip, 1);
 		if (isController())
 			ModLang.builder().add(Component.nullToEmpty("CONTROLLER!")).forGoggles(tooltip, 1);
+		else
+			ModLang.builder().add(Component.nullToEmpty(getController().toShortString())).forGoggles(tooltip, 1);
 		return true;
 	}
 
 	@Override
-	public int getMaxWidth() {
-		return MAX_WIDTH;
+	public void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+		super.read(tag, registries, clientPacket);
+		if (this.voltageSourceCoupling != null)
+			this.voltageSourceCoupling.setVoltage(tag.getFloat("ModularNodeValue"));
 	}
 
 	@Override
-	public int getMaxLength(Direction.Axis longAxis, int width) {
-		return 1;
+	public void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+		super.write(tag, registries, clientPacket);
+		if (this.voltageSourceCoupling != null)
+			tag.putFloat("ModularNodeValue", (float) this.voltageSourceCoupling.getVoltage());
 	}
 
 	@Override
-	public Axis getMainConnectionAxis() {
-		return Direction.Axis.Y;
+	public void writeSafe(CompoundTag tag, HolderLookup.Provider registries) {
+		super.writeSafe(tag, registries);
+		if (this.voltageSourceCoupling != null)
+			tag.putFloat("ModularNodeValue", (float) this.voltageSourceCoupling.getVoltage());
 	}
 }

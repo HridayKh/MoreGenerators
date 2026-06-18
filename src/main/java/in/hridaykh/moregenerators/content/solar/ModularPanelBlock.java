@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 import org.patryk3211.powergrid.electricity.base.ElectricBlock;
 import org.patryk3211.powergrid.electricity.deviceconnector.IAcceptConnector;
 import org.patryk3211.powergrid.electricity.info.IHaveElectricProperties;
+import org.patryk3211.powergrid.electricity.info.Resistance;
 
 import java.util.List;
 
@@ -86,8 +87,7 @@ public class ModularPanelBlock extends ElectricBlock implements IAcceptConnector
 
 	@Override
 	public void appendProperties(ItemStack stack, Player player, List<Component> tooltip) {
-		// Display resistance information in tooltips
-		// Resistance.series(SimpleMultiBlockEntity.BASE_INTERNAL_RESISTANCE, player, tooltip);
+		Resistance.series(ModularPanelBE.BASE_INTERNAL_RESISTANCE, player, tooltip);
 	}
 
 	@Override
