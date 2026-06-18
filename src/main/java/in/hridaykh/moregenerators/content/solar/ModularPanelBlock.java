@@ -53,22 +53,94 @@ public class ModularPanelBlock extends ElectricBlock implements IAcceptConnector
 	}
 
 	@Override
-	public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
-		super.onPlace(state, level, pos, oldState, isMoving);
-		if (level.isClientSide)
-			return;
-		if (level.getBlockEntity(pos) instanceof ModularPanelBE multiBe)
-			ConnectivityHandler.formMulti(multiBe);
-	}
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
+        super.onPlace(state, level, pos, oldState, isMoving);
+        if (level.isClientSide) return;
+        
+        if (state.getBlock() == oldState.getBlock()) return;
 
-	@Override
-	public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-		if (state.getBlock() == newState.getBlock())
-			return;
-		if (level.getBlockEntity(pos) instanceof ModularPanelBE multiBe)
-			ConnectivityHandler.splitMulti(multiBe);
-		super.onRemove(state, level, pos, newState, isMoving);
-	}
+        recalculateNetwork(level, pos, null);
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (state.getBlock() == newState.getBlock()) return;
+
+        if (level.getBlockEntity(pos) instanceof ModularPanelBE multiBe) 
+            ConnectivityHandler.splitMulti(multiBe);
+        
+        recalculateNetwork(level, pos, pos);
+
+        super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    /**
+     * Performs an 8-way horizontal flood-fill search (same Y level) to discover 
+     * all connected panels, dissolves them, and forces Create to reform them cleanly.
+     */
+    private void recalculateNetwork(Level level, BlockPos startPos, @Nullable BlockPos ignoredPos) {
+        if (level.isClientSide()) return;
+
+        Set<BlockPos> visited = new HashSet<>();
+        Queue<BlockPos> queue = new LinkedList<>();
+        List<ModularPanelBE> panelsToProcess = new ArrayList<>();
+
+        if (ignoredPos != null) {
+            visited.add(ignoredPos);
+        }
+
+        // Seed the search queue
+        if (ignoredPos == null && level.getBlockEntity(startPos) instanceof ModularPanelBE startBe) {
+            queue.add(startPos);
+            visited.add(startPos);
+            panelsToProcess.add(startBe);
+        } else {
+            // Check all 8 surrounding spots on the same Y-plane to seed the search
+            for (int x = -1; x <= 1; x++) {
+                for (int z = -1; z <= 1; z++) {
+                    if (x == 0 && z == 0) continue;
+                    BlockPos neighborPos = startPos.offset(x, 0, z); // Y offset hardcoded to 0
+                    
+                    if (neighborPos.equals(ignoredPos)) continue;
+                    if (level.getBlockEntity(neighborPos) instanceof ModularPanelBE neighborBe) {
+                        if (visited.add(neighborPos)) {
+                            queue.add(neighborPos);
+                            panelsToProcess.add(neighborBe);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Run the 2D flood-fill loop
+        while (!queue.isEmpty()) {
+            BlockPos current = queue.poll();
+            for (int x = -1; x <= 1; x++) {
+                for (int z = -1; z <= 1; z++) {
+                    if (x == 0 && z == 0) continue;
+                    BlockPos nextPos = current.offset(x, 0, z); // Y offset hardcoded to 0
+                    
+                    if (visited.contains(nextPos)) continue;
+
+                    if (level.getBlockEntity(nextPos) instanceof ModularPanelBE nextBe) {
+                        visited.add(nextPos);
+                        queue.add(nextPos);
+                        panelsToProcess.add(nextBe);
+                    }
+                }
+            }
+        }
+
+        // Step 1: Break down existing structures in the network
+        for (ModularPanelBE panel : panelsToProcess) {
+            ConnectivityHandler.splitMulti(panel);
+        }
+
+        // Step 2: Recalculate and merge multi-blocks on the flat plane
+        for (ModularPanelBE panel : panelsToProcess) {
+            ConnectivityHandler.formMulti(panel);
+        }
+    }
 
 	@Override
 	public boolean canConnect(LevelReader world, BlockPos pos, BlockState state, Direction side) {
