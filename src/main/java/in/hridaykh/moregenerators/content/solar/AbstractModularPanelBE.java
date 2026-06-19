@@ -111,14 +111,6 @@ public abstract class AbstractModularPanelBE extends SolarBE implements IMultiBl
 
 	// --- NBT Data & Networking Updates ---
 
-	@Override
-	protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-		super.loadAdditional(tag, registries);
-		controllerPos = tag.contains("Controller") ? BlockPos.of(tag.getLong("Controller")) : null;
-		width = tag.contains("Width") ? tag.getInt("Width") : 1;
-		height = tag.contains("Height") ? tag.getInt("Height") : 1;
-	}
-
 	@SuppressWarnings("null")
 	public void sendData() {
 		if (level != null && !level.isClientSide)
@@ -148,9 +140,13 @@ public abstract class AbstractModularPanelBE extends SolarBE implements IMultiBl
 
 	@Override
 	public void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+		boolean wasController = isController();
 		super.read(tag, registries, clientPacket);
 		controllerPos = tag.contains("Controller") ? BlockPos.of(tag.getLong("Controller")) : null;
 		width = tag.contains("Width") ? tag.getInt("Width") : 1;
 		height = tag.contains("Height") ? tag.getInt("Height") : 1;
+		if (clientPacket && level != null && isController() != wasController) {
+			getElectricBehaviour().rebuildCircuit(false);
+		}
 	}
 }

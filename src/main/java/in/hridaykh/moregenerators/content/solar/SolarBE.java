@@ -116,7 +116,7 @@ public class SolarBE extends ElectricBlockEntity implements IHaveGoggleInformati
 		super.read(tag, registries, clientPacket);
 		if (tag.contains("Overwrite"))
 			this.overwrite = tag.getBoolean("Overwrite");
-		if (this.voltageSourceCoupling != null)
+		if (this.voltageSourceCoupling != null && tag.contains("NodeValue"))
 			this.voltageSourceCoupling.setVoltage(tag.getFloat("NodeValue"));
 	}
 

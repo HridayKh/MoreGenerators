@@ -23,8 +23,7 @@ import com.simibubi.create.api.connectivity.ConnectivityHandler;
 
 public class ModularPanelBE extends AbstractModularPanelBE {
 
-	public final int MAX_WIDTH = 10;
-	public VoltageSourceCoupling voltageSourceCoupling;
+	public final int MAX_WIDTH = 20;
 
 	public ModularPanelBE(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.MODULAR_PANEL_BE.get(), pos, state);
@@ -52,7 +51,7 @@ public class ModularPanelBE extends AbstractModularPanelBE {
 			FloatingNode positive = builder.terminalNode(0);
 			FloatingNode negative = builder.terminalNode(1);
 			this.voltageSourceCoupling = builder.addInternalNode(VoltageSourceCoupling.class, positive, negative, BASE_INTERNAL_RESISTANCE);
-			this.voltageSourceCoupling.setVoltage(0);
+			this.voltageSourceCoupling.setVoltage(1);
 			rebuildMemberCircuits();
 		} else {
 			buildMemberCircuit(builder);
@@ -161,24 +160,24 @@ public class ModularPanelBE extends AbstractModularPanelBE {
 		return true;
 	}
 
-	@Override
-	public void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
-		super.read(tag, registries, clientPacket);
-		if (this.voltageSourceCoupling != null)
-			this.voltageSourceCoupling.setVoltage(tag.getFloat("ModularNodeValue"));
-	}
+	// @Override
+	// public void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+	// 	super.read(tag, registries, clientPacket);
+	// 	if (this.voltageSourceCoupling != null)
+	// 		this.voltageSourceCoupling.setVoltage(tag.getFloat("ModularNodeValue"));
+	// }
 
-	@Override
-	public void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
-		super.write(tag, registries, clientPacket);
-		if (this.voltageSourceCoupling != null)
-			tag.putFloat("ModularNodeValue", (float) this.voltageSourceCoupling.getVoltage());
-	}
+	// @Override
+	// public void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+	// 	super.write(tag, registries, clientPacket);
+	// 	if (this.voltageSourceCoupling != null)
+	// 		tag.putFloat("ModularNodeValue", (float) this.voltageSourceCoupling.getVoltage());
+	// }
 
-	@Override
-	public void writeSafe(CompoundTag tag, HolderLookup.Provider registries) {
-		super.writeSafe(tag, registries);
-		if (this.voltageSourceCoupling != null)
-			tag.putFloat("ModularNodeValue", (float) this.voltageSourceCoupling.getVoltage());
-	}
+	// @Override
+	// public void writeSafe(CompoundTag tag, HolderLookup.Provider registries) {
+	// 	super.writeSafe(tag, registries);
+	// 	if (this.voltageSourceCoupling != null)
+	// 		tag.putFloat("ModularNodeValue", (float) this.voltageSourceCoupling.getVoltage());
+	// }
 }
